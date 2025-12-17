@@ -37,6 +37,7 @@ fn main() {
                     eprintln!("RedrawRequested fired before Resumed or after Suspended");
                     return;
                 };
+                window.set_resizable(false);
                 let size = window.inner_size();
                 surface
                     .resize(
