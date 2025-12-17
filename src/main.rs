@@ -3,17 +3,23 @@ use std::rc::Rc;
 use winit::event::{Event, WindowEvent};
 use winit::event_loop::{ControlFlow, EventLoop};
 use winit::window::Window;
+use winit::dpi::LogicalSize;
 
 #[path = "winit_app.rs"]
 mod winit_app;
 
+#[path="ppm_consumer.rs"]
+mod ppm_consumer;
+
 fn main() {
     let event_loop = EventLoop::new().unwrap();
     let context = softbuffer::Context::new(event_loop.owned_display_handle()).unwrap();
+    let background = ppm_consumer::read_ppm_file("src/image.ppm");
+    let size = LogicalSize::new(background.width, background.height);
 
     let mut app = winit_app::WinitAppBuilder::with_init(
         |elwt| {
-            let window = elwt.create_window(Window::default_attributes());
+            let window = elwt.create_window(Window::default_attributes().with_inner_size(size));
             Rc::new(window.unwrap())
         },
         |_elwt, window| softbuffer::Surface::new(&context, window.clone()).unwrap(),
