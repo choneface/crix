@@ -72,7 +72,7 @@ pub struct Skin {
 #[derive(Debug)]
 pub enum SkinError {
     Io(std::io::Error),
-    Parse(toml::de::Error),
+    Json(serde_json::Error),
     AssetNotFound(String),
     MissingDrawSection(String),
     InvalidPartType(String),
@@ -83,9 +83,9 @@ impl std::fmt::Display for SkinError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             SkinError::Io(e) => write!(f, "IO error: {}", e),
-            SkinError::Parse(e) => write!(f, "TOML parse error: {}", e),
+            SkinError::Json(e) => write!(f, "JSON parse error: {}", e),
             SkinError::AssetNotFound(key) => write!(f, "Asset not found: {}", key),
-            SkinError::MissingDrawSection(id) => write!(f, "Missing [parts.draw] for button: {}", id),
+            SkinError::MissingDrawSection(id) => write!(f, "Missing 'draw' for button: {}", id),
             SkinError::InvalidPartType(t) => write!(f, "Invalid part type: {}", t),
             SkinError::Image(e) => write!(f, "Image error: {}", e),
         }
@@ -100,9 +100,9 @@ impl From<std::io::Error> for SkinError {
     }
 }
 
-impl From<toml::de::Error> for SkinError {
-    fn from(e: toml::de::Error) -> Self {
-        SkinError::Parse(e)
+impl From<serde_json::Error> for SkinError {
+    fn from(e: serde_json::Error) -> Self {
+        SkinError::Json(e)
     }
 }
 

@@ -1,0 +1,48 @@
+{
+  "skin": {
+    "name": "Demo Skinned Application",
+    "author": "choneface",
+    "version": "0.1"
+  },
+  "window": {
+    "width": 842,
+    "height": 1192,
+    "resizable": false
+  },
+  "assets": {
+    "background": "images/background.png",
+    "play_normal": "images/play_normal.png",
+    "play_hover": "images/play_hover.png",
+    "play_pressed": "images/play_pressed.png"
+  },
+  "parts": [
+    {
+      "id": "background",
+      "type": "image",
+      "asset": "background",
+      "x": 0,
+      "y": 0,
+      "width": 842,
+      "height": 1192,
+      "z": 0
+    },
+    {
+      "id": "play_button",
+      "type": "button",
+      "x": 16,
+      "y": 88,
+      "width": 23,
+      "height": 18,
+      "z": 10,
+      "action": "play",
+      "draw": {
+        "normal": "play_normal",
+        "hover": "play_hover",
+        "pressed": "play_pressed"
+      },
+      "hit": {
+        "type": "rect"
+      }
+    }
+  ]
+}

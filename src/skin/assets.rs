@@ -34,6 +34,11 @@ impl LoadedSkin {
         &self.skin.window
     }
 
+    /// Get the skin name.
+    pub fn name(&self) -> &str {
+        &self.skin.meta.name
+    }
+
     /// Get an image by asset key.
     pub fn get_image(&self, key: &str) -> Option<&RgbImage> {
         self.images.get(key)

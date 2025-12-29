@@ -5,17 +5,19 @@ use winit::event::WindowEvent;
 
 struct SkinApp {
     tree: UiTree,
+    title: String,
 }
 
 impl SkinApp {
     fn new() -> Result<Self, Box<dyn std::error::Error>> {
         // Load skin from directory
-        let skin = LoadedSkin::load(Path::new("skins/classic/skin.toml"))?;
+        let skin = LoadedSkin::load(Path::new("skins/classic/skin.json"))?;
+        let title = skin.name().to_string();
 
         // Build UI tree from skin
         let (tree, _window_config) = SkinBuilder::build(&skin)?;
 
-        Ok(Self { tree })
+        Ok(Self { tree, title })
     }
 }
 
@@ -56,6 +58,7 @@ impl App for SkinApp {
 
 fn main() {
     let app = SkinApp::new().expect("Failed to load skin");
+    let config = RunConfig::default().with_title(&app.title);
 
-    run(app, RunConfig::default());
+    run(app, config);
 }

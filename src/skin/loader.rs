@@ -8,23 +8,23 @@ use super::types::{
 };
 
 #[derive(Deserialize)]
-struct SkinToml {
-    skin: SkinMetaToml,
-    window: SkinWindowToml,
+struct SkinJson {
+    skin: SkinMetaJson,
+    window: SkinWindowJson,
     assets: HashMap<String, String>,
     #[serde(default)]
-    parts: Vec<SkinPartToml>,
+    parts: Vec<SkinPartJson>,
 }
 
 #[derive(Deserialize)]
-struct SkinMetaToml {
+struct SkinMetaJson {
     name: String,
     author: String,
     version: String,
 }
 
 #[derive(Deserialize)]
-struct SkinWindowToml {
+struct SkinWindowJson {
     width: u32,
     height: u32,
     #[serde(default)]
@@ -32,7 +32,7 @@ struct SkinWindowToml {
 }
 
 #[derive(Deserialize)]
-struct SkinPartToml {
+struct SkinPartJson {
     id: String,
     #[serde(rename = "type")]
     part_type: String,
@@ -47,49 +47,49 @@ struct SkinPartToml {
     #[serde(default)]
     action: Option<String>,
     #[serde(default)]
-    draw: Option<PartDrawToml>,
+    draw: Option<PartDrawJson>,
     #[serde(default)]
-    hit: Option<PartHitToml>,
+    hit: Option<PartHitJson>,
 }
 
 #[derive(Deserialize)]
-struct PartDrawToml {
+struct PartDrawJson {
     normal: String,
     hover: String,
     pressed: String,
 }
 
 #[derive(Deserialize)]
-struct PartHitToml {
+struct PartHitJson {
     #[serde(rename = "type")]
     hit_type: String,
 }
 
 impl Skin {
-    /// Load a skin from a TOML file path.
+    /// Load a skin from a JSON file path.
     pub fn load(path: &Path) -> Result<Self, SkinError> {
         let content = std::fs::read_to_string(path)?;
-        let toml: SkinToml = toml::from_str(&content)?;
+        let json: SkinJson = serde_json::from_str(&content)?;
 
         let base_path = path.parent().unwrap_or(Path::new("."));
 
         Ok(Skin {
             meta: SkinMeta {
-                name: toml.skin.name,
-                author: toml.skin.author,
-                version: toml.skin.version,
+                name: json.skin.name,
+                author: json.skin.author,
+                version: json.skin.version,
             },
             window: SkinWindow {
-                width: toml.window.width,
-                height: toml.window.height,
-                resizable: toml.window.resizable,
+                width: json.window.width,
+                height: json.window.height,
+                resizable: json.window.resizable,
             },
-            assets: toml
+            assets: json
                 .assets
                 .into_iter()
                 .map(|(k, v)| (k, base_path.join(v)))
                 .collect(),
-            parts: toml
+            parts: json
                 .parts
                 .into_iter()
                 .map(|p| Self::convert_part(p))
@@ -97,7 +97,7 @@ impl Skin {
         })
     }
 
-    fn convert_part(p: SkinPartToml) -> Result<SkinPart, SkinError> {
+    fn convert_part(p: SkinPartJson) -> Result<SkinPart, SkinError> {
         let part_type = match p.part_type.as_str() {
             "image" => {
                 let asset = p.asset.ok_or_else(|| {

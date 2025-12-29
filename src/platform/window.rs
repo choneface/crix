@@ -20,16 +20,18 @@ struct WinitHandler<A: App> {
     context: softbuffer::Context<winit::event_loop::OwnedDisplayHandle>,
     size: PhysicalSize<u32>,
     resizable: bool,
+    title: String,
     state: Option<AppState<A>>,
 }
 
 impl<A: App> WinitHandler<A> {
-    fn new(app: A, context: softbuffer::Context<winit::event_loop::OwnedDisplayHandle>, size: PhysicalSize<u32>, resizable: bool) -> Self {
+    fn new(app: A, context: softbuffer::Context<winit::event_loop::OwnedDisplayHandle>, size: PhysicalSize<u32>, resizable: bool, title: String) -> Self {
         Self {
             pending_app: Some(app),
             context,
             size,
             resizable,
+            title,
             state: None,
         }
     }
@@ -43,7 +45,8 @@ impl<A: App> ApplicationHandler for WinitHandler<A> {
 
         let attrs = WindowAttributes::default()
             .with_inner_size(self.size)
-            .with_resizable(self.resizable);
+            .with_resizable(self.resizable)
+            .with_title(&self.title);
 
         let window = Rc::new(
             event_loop
@@ -103,13 +106,23 @@ impl<A: App> ApplicationHandler for WinitHandler<A> {
 /// Configuration for running an application.
 pub struct RunConfig {
     pub resizable: bool,
+    pub title: String,
 }
 
 impl Default for RunConfig {
     fn default() -> Self {
         Self {
             resizable: false,
+            title: String::from("Curvy"),
         }
+    }
+}
+
+impl RunConfig {
+    /// Set the window title.
+    pub fn with_title(mut self, title: impl Into<String>) -> Self {
+        self.title = title.into();
+        self
     }
 }
 
@@ -123,7 +136,7 @@ pub fn run<A: App + 'static>(app: A, config: RunConfig) {
     // Get the size from the app's view
     let (width, height) = app.view().size();
     let size = PhysicalSize::new(width, height);
-    let mut handler = WinitHandler::new(app, context, size, config.resizable);
+    let mut handler = WinitHandler::new(app, context, size, config.resizable, config.title);
 
     event_loop.run_app(&mut handler).expect("Event loop failed");
 }
