@@ -3,7 +3,7 @@ use crate::widgets::Container;
 
 use super::assets::LoadedSkin;
 use super::types::{PartType, SkinError, SkinPart, SkinWindow};
-use super::widgets::{SkinButton, SkinImage};
+use super::widgets::{SkinButton, SkinImage, TextInput};
 
 /// Builds a UiTree from a loaded skin.
 pub struct SkinBuilder;
@@ -66,6 +66,42 @@ impl SkinBuilder {
                     pressed.clone(),
                     part.action.clone(),
                 )))
+            }
+            PartType::TextInput => {
+                let draw = part
+                    .text_input_draw
+                    .as_ref()
+                    .ok_or_else(|| SkinError::MissingDrawSection(part.id.clone()))?;
+
+                let normal = skin
+                    .get_image(&draw.normal)
+                    .ok_or_else(|| SkinError::AssetNotFound(draw.normal.clone()))?;
+                let hover = skin
+                    .get_image(&draw.hover)
+                    .ok_or_else(|| SkinError::AssetNotFound(draw.hover.clone()))?;
+                let focused = skin
+                    .get_image(&draw.focused)
+                    .ok_or_else(|| SkinError::AssetNotFound(draw.focused.clone()))?;
+                let invalid = draw.invalid.as_ref().and_then(|key| skin.get_image(key).cloned());
+
+                let mut text_input = TextInput::new(
+                    normal.clone(),
+                    hover.clone(),
+                    focused.clone(),
+                    invalid,
+                );
+
+                if let Some(action) = &part.action {
+                    text_input = text_input.with_on_change(action.clone());
+                }
+                if let Some(color) = part.text_color {
+                    text_input = text_input.with_text_color(color);
+                }
+                if let Some(padding) = part.padding {
+                    text_input = text_input.with_padding(padding);
+                }
+
+                Ok(Box::new(text_input))
             }
         }
     }

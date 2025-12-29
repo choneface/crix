@@ -9,6 +9,18 @@ pub struct WidgetState {
     pub focused: bool,
 }
 
+/// Keyboard key codes for text input handling.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum KeyCode {
+    Backspace,
+    Delete,
+    Left,
+    Right,
+    Home,
+    End,
+    Enter,
+}
+
 /// Events that widgets can handle.
 #[derive(Debug, Clone)]
 pub enum WidgetEvent {
@@ -16,6 +28,10 @@ pub enum WidgetEvent {
     MouseUp { x: i32, y: i32 },
     MouseMove { x: i32, y: i32 },
     Click,
+    CharInput { c: char },
+    KeyDown { key: KeyCode },
+    FocusGained,
+    FocusLost,
 }
 
 /// The core trait for UI widgets.

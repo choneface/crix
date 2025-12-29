@@ -5,6 +5,7 @@ use serde::Deserialize;
 
 use super::types::{
     HitType, PartDraw, PartHit, PartType, Skin, SkinError, SkinMeta, SkinPart, SkinWindow,
+    TextInputDraw,
 };
 
 #[derive(Deserialize)]
@@ -49,7 +50,13 @@ struct SkinPartJson {
     #[serde(default)]
     draw: Option<PartDrawJson>,
     #[serde(default)]
+    text_input_draw: Option<TextInputDrawJson>,
+    #[serde(default)]
     hit: Option<PartHitJson>,
+    #[serde(default)]
+    text_color: Option<String>,
+    #[serde(default)]
+    padding: Option<u32>,
 }
 
 #[derive(Deserialize)]
@@ -57,6 +64,15 @@ struct PartDrawJson {
     normal: String,
     hover: String,
     pressed: String,
+}
+
+#[derive(Deserialize)]
+struct TextInputDrawJson {
+    normal: String,
+    hover: String,
+    focused: String,
+    #[serde(default)]
+    invalid: Option<String>,
 }
 
 #[derive(Deserialize)]
@@ -106,6 +122,7 @@ impl Skin {
                 PartType::Image { asset }
             }
             "button" => PartType::Button,
+            "text_input" => PartType::TextInput,
             other => return Err(SkinError::InvalidPartType(other.to_string())),
         };
 
@@ -115,10 +132,23 @@ impl Skin {
             pressed: d.pressed,
         });
 
+        let text_input_draw = p.text_input_draw.map(|d| TextInputDraw {
+            normal: d.normal,
+            hover: d.hover,
+            focused: d.focused,
+            invalid: d.invalid,
+        });
+
         let hit = p.hit.map(|h| PartHit {
             hit_type: match h.hit_type.as_str() {
                 "rect" | _ => HitType::Rect,
             },
+        });
+
+        // Parse text_color from hex string like "0x000000"
+        let text_color = p.text_color.and_then(|s| {
+            let s = s.trim_start_matches("0x").trim_start_matches("0X");
+            u32::from_str_radix(s, 16).ok()
         });
 
         Ok(SkinPart {
@@ -130,8 +160,11 @@ impl Skin {
             height: p.height,
             z: p.z,
             draw,
+            text_input_draw,
             hit,
             action: p.action,
+            text_color,
+            padding: p.padding,
         })
     }
 }

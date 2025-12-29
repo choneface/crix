@@ -17,12 +17,21 @@ pub struct SkinWindow {
     pub resizable: bool,
 }
 
-/// Drawing configuration for stateful widgets.
+/// Drawing configuration for stateful widgets (buttons).
 #[derive(Debug, Clone)]
 pub struct PartDraw {
     pub normal: String,
     pub hover: String,
     pub pressed: String,
+}
+
+/// Drawing configuration for text inputs.
+#[derive(Debug, Clone)]
+pub struct TextInputDraw {
+    pub normal: String,
+    pub hover: String,
+    pub focused: String,
+    pub invalid: Option<String>,
 }
 
 /// Hit testing configuration.
@@ -42,6 +51,7 @@ pub enum HitType {
 pub enum PartType {
     Image { asset: String },
     Button,
+    TextInput,
 }
 
 /// A skin part definition from [[parts]] in TOML.
@@ -55,8 +65,11 @@ pub struct SkinPart {
     pub height: u32,
     pub z: i32,
     pub draw: Option<PartDraw>,
+    pub text_input_draw: Option<TextInputDraw>,
     pub hit: Option<PartHit>,
     pub action: Option<String>,
+    pub text_color: Option<u32>,
+    pub padding: Option<u32>,
 }
 
 /// The root skin structure parsed from skin.toml.

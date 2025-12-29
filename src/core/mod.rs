@@ -10,4 +10,4 @@ pub use node::{Node, NodeId};
 pub use rect::Rect;
 pub use tree::UiTree;
 pub use view::View;
-pub use widget::{Widget, WidgetEvent, WidgetState};
+pub use widget::{KeyCode, Widget, WidgetEvent, WidgetState};
