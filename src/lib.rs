@@ -1,3 +1,4 @@
+pub mod bundle;
 pub mod core;
 pub mod graphics;
 pub mod platform;
@@ -6,6 +7,7 @@ pub mod skin;
 pub mod widgets;
 
 // Re-export commonly used types at the crate root
+pub use bundle::{AppBundle, BundleError};
 pub use core::{
     Action, ActionDispatcher, ActionError, ActionHandler, App, AppRunner, KeyCode, Node, NodeId,
     Rect, Services, Store, UiTree, Value, View, Widget, WidgetEvent, WidgetState,

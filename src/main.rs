@@ -1,12 +1,31 @@
-use std::path::Path;
+use std::path::PathBuf;
 
+use clap::{Parser, Subcommand};
 use curvy::{
-    run, init_font, Action, ActionDispatcher, App, AppConfig, KeyCode,
-    LoadedSkin, LuaActionHandler, RunConfig, Services, SkinBuilder, StaticText,
+    run, init_font, Action, ActionDispatcher, App, AppBundle, KeyCode,
+    LuaActionHandler, RunConfig, Services, SkinBuilder, StaticText,
     Store, TextInput, UiTree, View, WidgetEvent,
 };
 use winit::event::WindowEvent;
 use winit::keyboard::{Key, NamedKey};
+
+/// Curvy - A skinnable UI framework
+#[derive(Parser)]
+#[command(name = "curvy")]
+#[command(about = "Run curvy application bundles", long_about = None)]
+struct Cli {
+    #[command(subcommand)]
+    command: Commands,
+}
+
+#[derive(Subcommand)]
+enum Commands {
+    /// Run a curvy application bundle
+    Run {
+        /// Path to the .curvy bundle directory
+        bundle: PathBuf,
+    },
+}
 
 struct SkinApp {
     tree: UiTree,
@@ -17,10 +36,10 @@ struct SkinApp {
 }
 
 impl SkinApp {
-    fn new() -> Result<Self, Box<dyn std::error::Error>> {
-        // Load skin from directory
-        let skin = LoadedSkin::load(Path::new("skins/classic/skin.json"))?;
-        let title = skin.name().to_string();
+    fn new(bundle: AppBundle) -> Result<Self, Box<dyn std::error::Error>> {
+        // Load skin from bundle
+        let skin = bundle.load_skin()?;
+        let title = format!("{} - {}", bundle.meta.name, skin.name());
 
         // Build UI tree from skin
         let (tree, _window_config) = SkinBuilder::build(&skin)?;
@@ -29,13 +48,21 @@ impl SkinApp {
         let store = Store::new();
         let mut dispatcher = ActionDispatcher::new();
 
-        // Load app configuration and create Lua action handler
-        let app_config = AppConfig::load(Path::new("app/app.toml"))?;
-        println!("Loaded app config: {}", app_config.meta.name);
-        for action_name in app_config.action_names() {
+        // Create Lua action handler from bundle's action scripts
+        let config_adapter = bundle.to_app_config();
+        println!("Loaded app: {} v{}", config_adapter.meta_name, config_adapter.meta_version);
+        for action_name in config_adapter.action_names() {
             println!("  Registered action: {}", action_name);
         }
-        let lua_handler = LuaActionHandler::new(app_config);
+
+        // Build action scripts HashMap for LuaActionHandler
+        let mut action_scripts = std::collections::HashMap::new();
+        for action_name in bundle.action_names() {
+            if let Some(path) = bundle.get_script(action_name) {
+                action_scripts.insert(action_name.clone(), path.to_path_buf());
+            }
+        }
+        let lua_handler = LuaActionHandler::from_scripts(action_scripts);
         dispatcher.add_handler(lua_handler);
 
         let services = Services::new();
@@ -244,12 +271,36 @@ impl App for SkinApp {
 }
 
 fn main() {
-    // Initialize font system - requires a TTF file
-    init_font(Path::new("fonts/font.ttf"), 16.0)
-        .expect("Failed to load font. Please place a TTF file at fonts/font.ttf");
+    let cli = Cli::parse();
 
-    let app = SkinApp::new().expect("Failed to load skin or app config");
-    let config = RunConfig::default().with_title(&app.title);
+    match cli.command {
+        Commands::Run { bundle: bundle_path } => {
+            // Load the app bundle
+            let bundle = match AppBundle::load(&bundle_path) {
+                Ok(b) => b,
+                Err(e) => {
+                    eprintln!("Failed to load bundle: {}", e);
+                    std::process::exit(1);
+                }
+            };
 
-    run(app, config);
+            // Initialize font system from bundle
+            if let Err(e) = init_font(bundle.font_path(), bundle.font_size) {
+                eprintln!("Failed to load font: {}", e);
+                std::process::exit(1);
+            }
+
+            // Create and run the app
+            let app = match SkinApp::new(bundle) {
+                Ok(a) => a,
+                Err(e) => {
+                    eprintln!("Failed to create app: {}", e);
+                    std::process::exit(1);
+                }
+            };
+
+            let config = RunConfig::default().with_title(&app.title);
+            run(app, config);
+        }
+    }
 }

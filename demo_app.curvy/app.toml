@@ -1,0 +1,22 @@
+# E85 Calculator App Bundle
+#
+# This is a self-contained curvy application bundle.
+# Run with: curvy run apps/e85_calculator.curvy
+
+[app]
+name = "E85 Blend Calculator"
+version = "1.0.0"
+author = "curvy demo"
+
+[skin]
+# Path to the skin definition file (relative to bundle root)
+path = "skin/skin.json"
+
+[fonts]
+# Default font for the application
+default = "skin/font.ttf"
+size = 16.0
+
+[actions]
+# Maps action names (triggered by buttons) to Lua scripts
+calculate_blend = "scripts/calculate_blend.lua"

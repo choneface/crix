@@ -43,8 +43,9 @@
 //! end
 //! ```
 
+use std::collections::HashMap;
 use std::fs;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 use mlua::{Lua, Value as LuaValue};
 
@@ -86,8 +87,8 @@ impl From<mlua::Error> for LuaError {
 /// Executes Lua scripts in response to actions, allowing scripts to
 /// read and write Store values.
 pub struct LuaActionHandler {
-    /// App configuration with action -> script mappings.
-    config: AppConfig,
+    /// Action name -> script path mappings.
+    action_scripts: HashMap<String, PathBuf>,
 }
 
 impl LuaActionHandler {
@@ -99,7 +100,30 @@ impl LuaActionHandler {
     /// # Returns
     /// A new LuaActionHandler ready to process actions.
     pub fn new(config: AppConfig) -> Self {
-        Self { config }
+        let mut action_scripts = HashMap::new();
+        for action_name in config.action_names() {
+            if let Some(path) = config.get_script(action_name) {
+                action_scripts.insert(action_name.clone(), path.to_path_buf());
+            }
+        }
+        Self { action_scripts }
+    }
+
+    /// Create a new Lua action handler from a HashMap of action -> script path.
+    ///
+    /// This is useful when loading from an app bundle.
+    pub fn from_scripts(action_scripts: HashMap<String, PathBuf>) -> Self {
+        Self { action_scripts }
+    }
+
+    /// Get the script path for an action.
+    pub fn get_script(&self, action_name: &str) -> Option<&Path> {
+        self.action_scripts.get(action_name).map(|p| p.as_path())
+    }
+
+    /// Get all registered action names.
+    pub fn action_names(&self) -> impl Iterator<Item = &String> {
+        self.action_scripts.keys()
     }
 
     /// Execute a Lua script with access to the Store.
@@ -232,7 +256,7 @@ impl ActionHandler for LuaActionHandler {
         _services: &Services,
     ) -> Result<bool, ActionError> {
         // Look up the script for this action
-        let script_path = match self.config.get_script(&action.name) {
+        let script_path = match self.get_script(&action.name) {
             Some(path) => path.to_path_buf(),
             None => return Ok(false), // Action not handled by Lua
         };
