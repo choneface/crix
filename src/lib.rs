@@ -1,6 +1,7 @@
 pub mod core;
 pub mod graphics;
 pub mod platform;
+pub mod scripting;
 pub mod skin;
 pub mod widgets;
 
@@ -11,5 +12,6 @@ pub use core::{
 };
 pub use graphics::{Canvas, Image, init_font, FontError};
 pub use platform::{run, RunConfig};
+pub use scripting::{AppConfig, AppConfigError, LuaActionHandler, LuaError};
 pub use skin::{LoadedSkin, SkinBuilder, SkinError, SkinWindow, StaticText, TextAlign, TextInput, VerticalAlign};
 pub use widgets::{Button, Container, ImageWidget};

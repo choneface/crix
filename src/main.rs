@@ -1,65 +1,12 @@
 use std::path::Path;
 
 use curvy::{
-    run, init_font, Action, ActionDispatcher, ActionError, ActionHandler, App, KeyCode,
-    LoadedSkin, RunConfig, Services, SkinBuilder, StaticText, Store, TextInput, UiTree,
-    View, WidgetEvent,
+    run, init_font, Action, ActionDispatcher, App, AppConfig, KeyCode,
+    LoadedSkin, LuaActionHandler, RunConfig, Services, SkinBuilder, StaticText,
+    Store, TextInput, UiTree, View, WidgetEvent,
 };
 use winit::event::WindowEvent;
 use winit::keyboard::{Key, NamedKey};
-
-/// Action handler for the blend calculator demo.
-/// Calculates how much E85 to add to reach a target ethanol percentage.
-struct BlendCalculatorHandler;
-
-impl ActionHandler for BlendCalculatorHandler {
-    fn handle(
-        &mut self,
-        action: &Action,
-        store: &mut Store,
-        _services: &Services,
-    ) -> Result<bool, ActionError> {
-        match action.name.as_str() {
-            "calculate_blend" => {
-                // Read inputs from store
-                let current_pct = store.get_number("inputs.current_ethanol_pct").unwrap_or(0.0);
-                let target_pct = store.get_number("inputs.target_ethanol_pct").unwrap_or(0.0);
-                let current_fuel = store.get_number("inputs.current_fuel_liters").unwrap_or(0.0);
-
-                // E85 is approximately 85% ethanol
-                const E85_ETHANOL_PCT: f64 = 85.0;
-
-                // Calculate E85 needed: solve for x where:
-                // (current_pct * current_fuel + E85_ETHANOL_PCT * x) / (current_fuel + x) = target_pct
-                // Rearranging: x = (target_pct - current_pct) * current_fuel / (E85_ETHANOL_PCT - target_pct)
-                let result = if target_pct >= E85_ETHANOL_PCT {
-                    // Can't exceed E85 percentage
-                    f64::INFINITY
-                } else if target_pct <= current_pct {
-                    // Already at or above target
-                    0.0
-                } else if current_fuel <= 0.0 {
-                    0.0
-                } else {
-                    (target_pct - current_pct) * current_fuel / (E85_ETHANOL_PCT - target_pct)
-                };
-
-                // Format the result
-                let result_str = if result.is_infinite() {
-                    "N/A".to_string()
-                } else {
-                    format!("{:.2}", result)
-                };
-
-                store.set("outputs.e85_to_add_liters", result_str);
-                println!("Calculated: {} liters of E85 needed", store.get_string("outputs.e85_to_add_liters"));
-
-                Ok(true)
-            }
-            _ => Ok(false),
-        }
-    }
-}
 
 struct SkinApp {
     tree: UiTree,
@@ -81,7 +28,16 @@ impl SkinApp {
         // Set up the store and dispatcher
         let store = Store::new();
         let mut dispatcher = ActionDispatcher::new();
-        dispatcher.add_handler(BlendCalculatorHandler);
+
+        // Load app configuration and create Lua action handler
+        let app_config = AppConfig::load(Path::new("app/app.toml"))?;
+        println!("Loaded app config: {}", app_config.meta.name);
+        for action_name in app_config.action_names() {
+            println!("  Registered action: {}", action_name);
+        }
+        let lua_handler = LuaActionHandler::new(app_config);
+        dispatcher.add_handler(lua_handler);
+
         let services = Services::new();
 
         Ok(Self {
@@ -292,7 +248,7 @@ fn main() {
     init_font(Path::new("fonts/font.ttf"), 16.0)
         .expect("Failed to load font. Please place a TTF file at fonts/font.ttf");
 
-    let app = SkinApp::new().expect("Failed to load skin");
+    let app = SkinApp::new().expect("Failed to load skin or app config");
     let config = RunConfig::default().with_title(&app.title);
 
     run(app, config);
